@@ -9,11 +9,11 @@ var path = require('path');
 var glob = require('multi-glob').glob;
 
 /**
- * The Module Object
+ * The Module Object.
  */
 function om() {}
 /**
- * The main function.
+ * The copy function. The purpose of the module.
  *
  * @param {string} source - The glob input for the source paths.
  * @param {string} destination - The input path for to the destination folder.
