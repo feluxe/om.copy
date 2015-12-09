@@ -1,6 +1,6 @@
 {
   "name": "om.copy",
-  "version": "0.0.3",
+  "version": "0.0.5",
   "description": "Copy tool for nodejs. Add Files glob style. Add filters glob style. Copy changed files.",
   "main": "index.js",
   "scripts": {

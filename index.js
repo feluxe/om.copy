@@ -1,163 +1,172 @@
+// TODO [] Write test.
+// TODO [] Comment all the things.
 
-//TODO [x] Check if it works properly.
-//TODO [x] Make this a npm Plugin.
-//TODO [x] Make Github repository out of it.
-//TODO [] Write test.
-//TODO [] Comment all the things.
-
-/***********************************************************************************************************************
- * omCopy
- * *********************************************************************************************************************
- * Define a path to copy. (str: glob)
- * Define a destination path (str: none glob)
- * Define filters. (arr: glob)
- *
- */
-"use strict";
+'use strict';
 
 // Load Modules.
 var fs = require('fs-extra');
 var path = require('path');
-var glob = require("multi-glob").glob;
+var glob = require('multi-glob').glob;
 
+/**
+ * The Module Object
+ */
 function om() {}
-
-om.copy = function(source, destination, exclude){
+/**
+ * The main function.
+ *
+ * @param {string} source - The glob input for the source paths.
+ * @param {string} destination - The input path for to the destination folder.
+ * @param {array} exclude - The glob input for the paths to be excluded.
+ * @return {Promise} - Resolve: return nothing. reject: return err.
+ */
+om.copy = function(source, destination, exclude) {
+  /**
+   * Make Paths Task.
+   * Convert Glob input to real path arr.
+   * Put Each Input array into Obj.
+   * Return Obj.
+   *
+   * @param {string} source - The glob input for the source paths.
+   * @param {array} exclude - The glob input for the paths to be excluded.
+   * @return {Promise} - resolve: returns Array of paths to be copied. reject: returns err.
+   */
+  var makePathsTask = function(source, exclude) {
     /**
-     * Make Paths Task
+     * Convert glob input into paths.
      *
-     * Convert Glob input to real path arr.
-     * Put Each Input array into Obj.
-     * Return Obj.
-     *
-     * @param source
-     * @param exclude
-     * @returns {Promise}
-     */
-    var makePathsTask = function(source, exclude){
-
-        // Convert glob input into paths.
-        var makePathsFromGlob = function (input) {
-            return new Promise(function(resolve, reject) {
-                glob(input, function (err, paths) {
-                    if (err) reject(err);
-                    resolve(paths);
-                });
-            });
-        };
-
-        // Normalize paths
-        var normalizePaths = function(input){
-            return new Promise(function(resolve) {
-                var output = [];
-                var i = 0;
-                if(input.length === 0){
-                    resolve(output);
-                } else {
-                    input.forEach(function (curInput) {
-                        i++;
-                        output.push(path.normalize(curInput));
-                        if (i >= input.length) {
-                            resolve(output);
-                        }
-                    });
-                }
-            });
-        };
-
-        // Filter source arr with exclude array.
-        var filterExcludeFromSource = function (source, exclude) {
-            return source.filter(function (val) {
-                return exclude.indexOf(val) == -1;
-            });
-        };
-
-        /**
-         * Make Paths Task Constructor
-         */
-        return new Promise(function(resolve, reject) {
-            Promise.all([
-                makePathsFromGlob(source),
-                makePathsFromGlob(exclude)
-            ]).then(function(paths){
-                return Promise.all([
-                    normalizePaths(paths[0]),
-                    normalizePaths(paths[1])
-                ]).then(function(result){
-                    return result;
-                })
-            }).then(function(paths){
-                resolve(filterExcludeFromSource(paths[0], paths[1]))
-            }).catch(function(err){
-                reject(err);
-            });
+     * @param {array|string} input - Glob input.
+     * @return {Promise} - resolve: returns array with paths. reject: returns err.
+       */
+    var makePathsFromGlob = function(input) {
+      return new Promise(function(resolve, reject) {
+        glob(input, function(err, paths) {
+          if (err) reject(err);
+          resolve(paths);
         });
+      });
     };
     /**
-     * Copy Task.
+     * Normalize paths
      *
-     * If source file Exist => compare src/dest. Copy if size not the same.
-     * If src file not Exist => Make dir and copy.
-     *
-     * @param srcPaths
-     * @param source
-     * @param destination
+     * @param {array|string} input - raw path/paths.
+     * @return {Promise} - resolve: return array of normalized paths.
      */
-    var copyTask = function(srcPaths, source, destination) {
-
-        var makeDestPath = function(curSrc, source, destination, callback){
-            var newDest = path.normalize(curSrc.replace(source, destination));
-            callback(newDest);
-        };
-
-        /**
-         * CopyTask Function Constructor
-         */
-        source = path.dirname(source);
-        source = path.normalize(source);
-        destination = path.normalize(destination);
-
-        return new Promise(function (resolve) {
-
-            for (var i = 0; i <= srcPaths.length - 1; i++) {
-                var curSrc = srcPaths[i];
-                makeDestPath(curSrc, source, destination, function(curDest){
-                    if (fs.statSync(curSrc).isFile()) {
-                        fs.ensureFileSync(curDest);
-                        if(fs.statSync(curSrc).size != fs.statSync(curDest).size){
-                            fs.copySync(curSrc, curDest, {clobber:true});
-                            console.log('NEW: ' + curDest);
-                        }
-                    } else {
-                        fs.ensureDirSync(curDest);
-                    }
-                });
-                if(i >= srcPaths.length -1){
-                    console.log('DONE...');
-                    resolve();
-                }
+    var normalizePaths = function(input) {
+      return new Promise(function(resolve) {
+        var output = [];
+        var i = 0;
+        if (input.length === 0) {
+          resolve(output);
+        } else {
+          input.forEach(function(curInput) {
+            i++;
+            output.push(path.normalize(curInput));
+            if (i >= input.length) {
+              resolve(output);
             }
-        });
+          });
+        }
+      });
     };
     /**
-     * Module Constructor
+     * Filter source arr with exclude array.
+     *
+     * @param {array} source - all source paths.
+     * @param {array} exclude - all paths to be excluded.
+     * @return {Array} - returns the filtered paths.
      */
-    return new Promise(function(resolve, reject){
-        makePathsTask(source, exclude)
-            .then(function (srcPaths) {
-                copyTask(srcPaths, source, destination)
-                    .then(function(msg){
-                        resolve(msg);
-                    }).catch(function(err){
-                    reject(err);
-                });
-            });
+    var filterExcludeFromSource = function(source, exclude) {
+      return source.filter(function(val) {
+        return exclude.indexOf(val) === -1;
+      });
+    };
+    /**
+     * Make Paths Task Constructor
+     *
+     */
+    return new Promise(function(resolve, reject) {
+      Promise.all([
+        makePathsFromGlob(source),
+        makePathsFromGlob(exclude)
+      ]).then(function(paths) {
+        return Promise.all([
+          normalizePaths(paths[0]),
+          normalizePaths(paths[1])
+        ]).then(function(result) {
+          return result;
+        });
+      }).then(function(paths) {
+        resolve(filterExcludeFromSource(paths[0], paths[1]));
+      }).catch(function(err) {
+        reject(err);
+      });
     });
+  };
+  /**
+   * Copy Task.
+   * If source file Exist => compare src/dest. Copy if size not the same.
+   * If src file not Exist => Make dir and copy.
+   *
+   * @param {array} srcPaths - the src paths of all files that are to be copied.
+   * @param {string} source - the main source input path (glob).
+   * @param {string} destination - The input path for to the destination folder.
+   * @return {Promise} - resolve: returns nothing. reject: returns err.
+   */
+  var copyTask = function(srcPaths, source, destination) {
+    /**
+     * Make Destination Path.
+     *
+     * @param {string} curSrc - The current source path.
+     * @param {string} source - The glob input for the source paths.
+     * @param {string} destination - the current destination path.
+     * @return {string} - returns the current destination path.
+     */
+    var makeDestPath = function(curSrc, source, destination) {
+      return path.normalize(curSrc.replace(source, destination));
+    };
+    /**
+     * CopyTask Function Constructor
+     *
+     */
+    source = path.dirname(source);
+    source = path.normalize(source);
+    destination = path.normalize(destination);
+
+    return new Promise(function(resolve) {
+      for (var i = 0; i <= srcPaths.length - 1; i++) {
+        var curSrc = srcPaths[i];
+        var curDest = makeDestPath(curSrc, source, destination);
+        if (fs.statSync(curSrc).isFile()) {
+          fs.ensureFileSync(curDest);
+          if (fs.statSync(curSrc).size !== fs.statSync(curDest).size) {
+            fs.copySync(curSrc, curDest, {clobber: true});
+            console.log('NEW: ' + curDest);
+          }
+        } else {
+          fs.ensureDirSync(curDest);
+        }
+        if (i >= srcPaths.length - 1) {
+          console.log('Copy done...\n');
+          resolve();
+        }
+      }
+    });
+  };
+  /**
+   * Module Constructor
+   */
+  return new Promise(function(resolve, reject) {
+    makePathsTask(source, exclude)
+      .then(function(srcPaths) {
+        copyTask(srcPaths, source, destination)
+          .then(function(msg) {
+            resolve(msg);
+          }).catch(function(err) {
+            reject(err);
+          });
+      });
+  });
 };
 
 module.exports = om;
-
-
-
-
-
