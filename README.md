@@ -26,13 +26,13 @@ var exclude = [
 var destination =  'dist/';
 
 // Execute.
-om.copy(source, destination, exclude)
+om.copy(source, destination, exclude);
 ```
 
 ###### ES6 Promise integrated:
 ```javascript
 om.copy(source, destination, exclude).then(function(){
-    // Do Stuff when copy finished... 
+    // Do Stuff when copy finished...
 }).catch(err){
     // track Errors.
 });
